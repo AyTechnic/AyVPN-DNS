@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/Win/Files/logo.png" alt="AyVPN-DNS Logo" width="120">
+  <img src="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/Win/Files/logo.png" alt="AyVPN-DNS Logo" width="120" onerror="this.onerror=null; this.src='https://img.shields.io/badge/Logo-AyVPN--DNS-00d4ff?style=for-the-badge';">
 </p>
 
 <h1 align="center">AyVPN-DNS</h1>
@@ -52,17 +52,19 @@
 
 برای آشنایی با فضای گرافیکی برنامه، می‌توانید نسخه تحت وب آن را که دقیقاً شبیه‌ساز نسخه ویندوز است، مشاهده کنید. این دمو امکاناتی مانند اتصال/قطع، چرخش کره، تولید لاگ‌های زنده و تغییر زبان را شبیه‌سازی می‌کند.
 
-<a href="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/www/AyVPN-DNS.html" target="_blank">
-  <p align="center">
-    <img src="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/Win/Files/logo.png" alt="Live Demo" width="60%">
-  </p>
-</a>
+<div align="center">
+  <a href="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/www/AyVPN-DNS.html" target="_blank">
+    <img src="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/Win/Files/logo.png" alt="Live Demo Thumbnail" width="80%" style="border-radius: 16px; border: 1px solid #00d4ff;" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x400?text=AyVPN-DNS+Demo';">
+  </a>
+</div>
 
 <div align="center">
   <a href="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/www/AyVPN-DNS.html" target="_blank">
     <img src="https://img.shields.io/badge/🌐-مشاهده دموی آنلاین-00d4ff?style=for-the-badge" alt="Live Demo">
   </a>
 </div>
+
+> **نکته:** در صورتی که تصویر پیش‌نمایش بارگذاری نشد، روی دکمه کلیک کنید تا دمو در مرورگر باز شود.
 
 ---
 
@@ -130,7 +132,7 @@ LOG_LEVEL = "INFO"
 
 - **وب‌سایت:** [shammay.ir](https://shammay.ir)
 - **گیت‌هاب:** [AyTechnic/AyVPN-DNS](https://github.com/AyTechnic/AyVPN-DNS)
-- **تلگرام:** [@AyVPN_DNS](https://t.me/AyVPNsupport)
+- **تلگرام:** [@AyVPN_DNS](https://t.me/AyVPN_DNS)
 
 اگر باگی مشاهده کردید یا سوالی داشتید، از طریق لینک‌های بالا با ما در میان بگذارید.
 
