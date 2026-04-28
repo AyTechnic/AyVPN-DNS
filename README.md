@@ -53,13 +53,13 @@
 برای آشنایی با فضای گرافیکی برنامه، می‌توانید نسخه تحت وب آن را که دقیقاً شبیه‌ساز نسخه ویندوز است، مشاهده کنید. این دمو امکاناتی مانند اتصال/قطع، چرخش کره، تولید لاگ‌های زنده و تغییر زبان را شبیه‌سازی می‌کند.
 
 <div align="center">
-  <a href="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/www/AyVPN-DNS.html" target="_blank">
+  <a href="https://raw.githubusercontent.com/AyTechnic/AyVPN-DNS/refs/heads/main/Simulation.html" target="_blank">
     <img src="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/Win/Files/logo.png" alt="Live Demo Thumbnail" width="80%" style="border-radius: 16px; border: 1px solid #00d4ff;" onerror="this.onerror=null; this.src='https://via.placeholder.com/800x400?text=AyVPN-DNS+Demo';">
   </a>
 </div>
 
 <div align="center">
-  <a href="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/www/AyVPN-DNS.html" target="_blank">
+  <a href="hhttps://raw.githubusercontent.com/AyTechnic/AyVPN-DNS/refs/heads/main/Simulation.html" target="_blank">
     <img src="https://img.shields.io/badge/🌐-مشاهده دموی آنلاین-00d4ff?style=for-the-badge" alt="Live Demo">
   </a>
 </div>
