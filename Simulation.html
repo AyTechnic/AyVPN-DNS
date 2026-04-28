@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AyVPN-DNS | Secure DNS Tunnel VPN</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', sans-serif;
+            background: radial-gradient(circle at 20% 30%, #0a0a1a, #03030a);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app-window {
+            width: 1350px;
+            max-width: 95vw;
+            height: 800px;
+            background: rgba(8, 8, 18, 0.75);
+            backdrop-filter: blur(2px);
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255,255,255,0.03);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(0, 212, 255, 0.25);
+        }
+
+        /* ناحیه لاگ با ارتفاع ثابت و بدون اسکرول خودکار */
+        .log-area {
+            flex: 1;
+            min-height: 0;
+            background: rgba(5, 5, 15, 0.6);
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 11px;
+            color: rgba(180, 190, 210, 0.5);
+            padding: 18px 22px;
+            overflow-y: auto;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.12);
+            z-index: 1;
+            line-height: 1.5;
+            letter-spacing: 0.3px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* محتوای لاگ به صورت ستون معکوس برای نمایش آخرین خط در پایین بدون اسکرول */
+        .log-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .log-line {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            flex-shrink: 0;
+        }
+
+        .log-line.success { color: rgba(80, 250, 123, 0.6); }
+        .log-line.error { color: rgba(255, 85, 85, 0.6); }
+        .log-line.info { color: rgba(139, 233, 253, 0.55); }
+        .log-line.warning { color: rgba(241, 250, 140, 0.55); }
+        .log-line.resolver { color: rgba(189, 147, 249, 0.55); }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            padding: 20px 28px;
+            gap: 28px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .overlay > * {
+            pointer-events: auto;
+        }
+
+        .left-panel {
+            flex: 1.2;
+            background: transparent;
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .shammay-glow {
+            text-align: center;
+            padding: 12px 0;
+            background: rgba(20,20,45,0.35);
+            border-radius: 60px;
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            font-family: 'Segoe UI', sans-serif;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(80,250,123,0.3);
+            box-shadow: 0 0 15px rgba(80,250,123,0.2);
+            animation: gentlePulse 2s infinite;
+            cursor: default;
+        }
+
+        @keyframes gentlePulse {
+            0% { text-shadow: 0 0 3px currentColor; opacity: 0.85;}
+            100% { text-shadow: 0 0 12px currentColor; opacity: 1;}
+        }
+
+        .setting-card {
+            background: rgba(20, 20, 40, 0.55);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            border: 1px solid rgba(80, 250, 123, 0.3);
+            padding: 14px 18px;
+            transition: 0.2s;
+        }
+
+        .setting-card:hover {
+            border-color: #50fa7b80;
+            background: rgba(28, 28, 55, 0.65);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            color: #50fa7b;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .card-header i {
+            font-size: 18px;
+        }
+
+        .setting-input {
+            width: 100%;
+            background: rgba(8, 8, 20, 0.9);
+            border: 1px solid #50fa7b;
+            border-radius: 14px;
+            padding: 12px 14px;
+            color: #e2e2e2;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            text-align: center;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .setting-input:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 8px #00d4ff66;
+        }
+
+        .proxy-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .proxy-toggle {
+            background: rgba(30, 30, 55, 0.9);
+            border: 1px solid #33e4ff;
+            border-radius: 40px;
+            padding: 10px;
+            color: #00d4ff;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        .proxy-toggle.active {
+            background: linear-gradient(95deg, #00d4ff, #02b3e0);
+            color: #0a0a1a;
+            border-color: #50fa7b;
+        }
+
+        .center-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+
+        .logo-small {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #0a0a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #00d4ff33;
+        }
+        .logo-small img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: contain;
+        }
+
+        .app-title {
+            font-size: 40px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff, #89e7ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            cursor: pointer;
+        }
+
+        .sub {
+            font-size: 13px;
+            color: #00d4ff;
+            margin-top: 6px;
+            margin-bottom: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        .globe-container {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 12px 0;
+        }
+
+        .success-circle {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(80,250,123,0.5), rgba(80,250,123,0) 70%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .success-circle.active {
+            opacity: 1;
+            animation: pulseGreen 1.3s infinite ease-out;
+        }
+
+        @keyframes pulseGreen {
+            0% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(80,250,123,0.6);}
+            70% { transform: scale(1.08); box-shadow: 0 0 0 20px rgba(80,250,123,0);}
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(80,250,123,0);}
+        }
+
+        .globe {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .globe img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+
+        .globe.rotating img {
+            animation: spinGlobe 1.2s linear infinite;
+        }
+
+        @keyframes spinGlobe {
+            from { transform: rotate(0deg);}
+            to { transform: rotate(360deg);}
+        }
+
+        .globe-halo {
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,212,255,0.2), transparent);
+            pointer-events: none;
+            transition: 0.2s;
+        }
+        .globe:hover .globe-halo {
+            background: radial-gradient(circle, rgba(0,212,255,0.4), rgba(80,250,123,0.1));
+            box-shadow: 0 0 18px #00d4ff66;
+        }
+
+        .globe-tooltip-center {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            color: #00ffe0;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 6px 16px;
+            border-radius: 40px;
+            border: 1px solid #00d4ff;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            font-family: 'Segoe UI', sans-serif;
+            box-shadow: 0 0 14px rgba(0,212,255,0.6);
+            transform: translate(-50%, -50%);
+            letter-spacing: 0.5px;
+        }
+
+        .right-panel {
+            flex: 1;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 32px;
+            gap: 24px;
+        }
+
+        .icon-row {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .circle-icon {
+            width: 52px;
+            height: 52px;
+            background: rgba(80,250,123,0.2);
+            backdrop-filter: blur(4px);
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            border: 1px solid #50fa7b;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .circle-icon:hover {
+            background: rgba(80,250,123,0.5);
+            transform: scale(1.02);
+            border-color: #00d4ff;
+        }
+
+        .floating-circle {
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,212,255,0.2), rgba(80,250,123,0.05));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #50fa7b;
+            box-shadow: 0 0 20px rgba(80,250,123,0.3);
+            backdrop-filter: blur(8px);
+        }
+        .resolver-count {
+            font-size: 58px;
+            font-weight: 800;
+            color: #f1fa8c;
+            text-shadow: 0 0 6px #ffb86c;
+        }
+        .resolver-label {
+            font-size: 12px;
+            color: #bbb;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .websites-box {
+            width: 210px;
+            background: rgba(20, 20, 45, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            border: 1px solid #00d4ff;
+            padding: 10px 8px;
+        }
+        .website-item {
+            font-size: 11px;
+            font-family: monospace;
+            color: #8be9fd;
+            padding: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .footer-note {
+            margin-top: auto;
+            font-size: 9px;
+            color: #557;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00d4ff;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-window">
+    <div class="log-area" id="logArea">
+        <div class="log-content" id="logContent"></div>
+    </div>
+
+    <div class="overlay">
+        <div class="left-panel">
+            <div class="shammay-glow" id="shammayGlow">shammay</div>
+
+            <div class="setting-card">
+                <div class="card-header"><i class="fas fa-globe"></i><span>DOMAINS</span></div>
+                <input type="text" class="setting-input" id="domainsInput" value="shammay.ir, api.shammay.ir">
+            </div>
+
+            <div class="setting-card">
+                <div class="card-header"><i class="fas fa-key"></i><span>ENCRYPTION KEY</span></div>
+                <input type="password" class="setting-input" id="encKey" value="7ea0ff2165720f234da186d9c4efbc08">
+            </div>
+
+            <div class="setting-card">
+                <div class="card-header"><i class="fas fa-network-wired"></i><span>PROXY SETTINGS</span></div>
+                <div class="proxy-row">
+                    <input type="text" class="setting-input" id="proxyIp" value="127.0.0.1">
+                    <input type="text" class="setting-input" id="proxyPort" value="18000">
+                </div>
+                <div class="proxy-toggle" id="proxyToggleBtn">
+                    <i class="fas fa-globe"></i> <span id="proxyToggleText">Proxy OFF</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="center-panel">
+            <div class="logo-small" id="logoClick">
+                <img src="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/Win/Files/logo.png" alt="logo">
+            </div>
+            <div class="app-title" id="titleClick">AyVPN-DNS</div>
+            <div class="sub" id="subText">Secure DNS Tunnel VPN</div>
+
+            <div class="globe-container">
+                <div class="success-circle" id="successCircle"></div>
+                <div class="globe" id="globeBtn">
+                    <div class="globe-halo"></div>
+                    <img src="https://ayvps.s3.ir-thr-at1.arvanstorage.ir/AyVPN-DNS/Win/Files/globe.png" alt="globe">
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="icon-row">
+                <div class="circle-icon" id="userInfoBtn"><i class="fas fa-user-circle"></i></div>
+                <div class="circle-icon" id="langBtn"><i class="fas fa-language"></i></div>
+            </div>
+            <div class="icon-row">
+                <div class="circle-icon" id="settingsBtn"><i class="fas fa-cogs"></i></div>
+                <div class="circle-icon" id="resolversBtn"><i class="fas fa-list"></i></div>
+                <div class="circle-icon" id="updateResolversBtn"><i class="fas fa-sync-alt"></i></div>
+            </div>
+
+            <div class="floating-circle">
+                <div class="resolver-count" id="resolverCount">0</div>
+                <div class="resolver-label" id="resolverLabel">Active<br>Resolvers</div>
+            </div>
+
+            <div class="websites-box" id="websitesBox">
+                <div class="website-item" id="web1">youtube.com</div>
+                <div class="website-item" id="web2">google.com</div>
+                <div class="website-item" id="web3">github.com</div>
+            </div>
+            <div class="footer-note">AyVPN-DNS • shammay.ir</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- برنامه اصلی با لاگ‌های واقعی و بدون اسکرول ----------
+    let isConnected = false;
+    let proxyActive = false;
+    let currentLanguage = 'en';
+    let fakeResolverCount = 7;
+    let tooltipElement = null;
+    let logQueue = [];
+    let isProcessing = false;
+
+    // المانها
+    const globeContainer = document.getElementById('globeBtn');
+    const successCircle = document.getElementById('successCircle');
+    const resolverCountSpan = document.getElementById('resolverCount');
+    const logContent = document.getElementById('logContent');
+    const proxyToggleBtn = document.getElementById('proxyToggleBtn');
+    const proxyToggleTextSpan = document.getElementById('proxyToggleText');
+    const shammayGlow = document.getElementById('shammayGlow');
+    const langBtn = document.getElementById('langBtn');
+    const subTextSpan = document.getElementById('subText');
+    const userInfoBtn = document.getElementById('userInfoBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const resolversBtn = document.getElementById('resolversBtn');
+    const updateResolversBtn = document.getElementById('updateResolversBtn');
+    const websiteDivs = [document.getElementById('web1'), document.getElementById('web2'), document.getElementById('web3')];
+
+    // لیست وبسایت‌های معروف
+    const websitesList = [
+        "youtube.com", "google.com", "github.com", "openai.com", "netflix.com",
+        "twitter.com", "instagram.com", "spotify.com", "telegram.org", "discord.com",
+        "reddit.com", "zoom.us", "linkedin.com", "whatsapp.com", "cloudflare.com"
+    ];
+
+    // لاگ‌های واقعی از فایل متنی AyVPN-DNS Log.txt
+    const realLogs = [
+        "[AyVPN-DNS Client] [INFO] ============================================================",
+        "[AyVPN-DNS Client] [INFO] GitHub: https://github.com/AyTechnic/AyVPN-DNS",
+        "[AyVPN-DNS Client] [INFO] Telegram: @AyVPN-DNS",
+        "[AyVPN-DNS Client] [INFO] Build Version: v2026.05.01-1.0.0",
+        "[AyVPN-DNS Client] [INFO] ============================================================",
+        "[AyVPN-DNS Client] [INFO] 🚀 Client Configuration Loaded",
+        "[AyVPN-DNS Client] [INFO] 🚀 Client Mode, Protocol: SOCKS5 Encryption: 1",
+        "[AyVPN-DNS Client] [INFO] ⚖ Resolver Balancing, Strategy: Round-Robin (2)",
+        "[AyVPN-DNS Client] [INFO] 🌐 Configured Domains: 1 (shammay.ir)",
+        "[AyVPN-DNS Client] [INFO] 📡 Loaded Resolvers: 443 endpoints.",
+        "[AyVPN-DNS Client] [INFO] 🚀 AyVPN-DNS Client Started",
+        "[AyVPN-DNS Client] [INFO] Testing MTU sizes for all resolver-domain pairs (parallel=200)...",
+        "[AyVPN-DNS Client] [WARN] ❌ Rejected (1/443): shammay.ir via 185.24.255.80:53 | reason=UPLOAD_MTU",
+        "[AyVPN-DNS Client] [WARN] ❌ Rejected (2/443): shammay.ir via 185.192.113.26:53 | reason=UPLOAD_MTU",
+        "[AyVPN-DNS Client] [INFO] ✅ Accepted (422/443): shammay.ir via 185.208.76.104:53 | upload=66 | download=990",
+        "[AyVPN-DNS Client] [INFO] ✅ Session Initialized Successfully (ID: 70)",
+        "[AyVPN-DNS Client] [INFO] 📡 Async Runtime Initialized: 4 RX/TX Workers, 5 Processors",
+        "[AyVPN-DNS Client] [INFO] 🚀 SOCKS5 Proxy server is listening on 127.0.0.1:18000",
+        "[AyVPN-DNS Client] [INFO] 🔄 DNS server 109.230.83.155:53 re-activated after successful recheck. | Active Resolvers: 8",
+        "[AyVPN-DNS Client] [INFO] 🔌 New SOCKS5 TCP CONNECT to gator.volces.com:443, Stream ID: 1",
+        "[AyVPN-DNS Client] [INFO] 🔌 New SOCKS5 TCP CONNECT to www.youtube.com:443, Stream ID: 2",
+        "[AyVPN-DNS Client] [INFO] 🔌 New SOCKS5 TCP CONNECT to web.rubika.ir:443, Stream ID: 3",
+        "[AyVPN-DNS Client] [INFO] 🔌 New SOCKS5 TCP CONNECT to www.wildlink.me:443, Stream ID: 4",
+        "[AyVPN-DNS Client] [INFO] 🔌 New SOCKS5 TCP CONNECT to check-host.net:443, Stream ID: 5",
+        "[AyVPN-DNS Client] [INFO] 🔌 New SOCKS5 TCP CONNECT to fonts.gstatic.com:443, Stream ID: 8",
+        "[AyVPN-DNS Client] [INFO] 🔌 New SOCKS5 TCP CONNECT to cdn.jsdelivr.net:443, Stream ID: 9",
+        "[AyVPN-DNS Client] [INFO] Global MTU Configuration -> Upload: 49, Download: 562",
+        "[AyVPN-DNS Client] [INFO] Total valid resolvers after MTU testing: 7 of 443"
+    ];
+
+    // تشخیص نوع لاگ بر اساس متن
+    function getLogType(text) {
+        if (text.includes('✅') || text.includes('Success') || text.includes('success') || text.includes('Accepted')) return 'success';
+        if (text.includes('❌') || text.includes('ERROR') || text.includes('error') || text.includes('Rejected')) return 'error';
+        if (text.includes('WARN') || text.includes('⚠')) return 'warning';
+        if (text.includes('Resolver') || text.includes('resolver') || text.includes('DNS')) return 'resolver';
+        return 'info';
+    }
+
+    // اضافه کردن لاگ به صف و پردازش با سرعت بالا بدون اسکرول
+    function addLog(text, type = null) {
+        const finalType = type || getLogType(text);
+        logQueue.push({ text, type: finalType });
+        processLogQueue();
+    }
+
+    let lastProcessTime = 0;
+    const PROCESS_INTERVAL = 80; // میلی‌ثانیه - سرعت بالای نمایش لاگ‌ها
+
+    function processLogQueue() {
+        if (isProcessing) return;
+        isProcessing = true;
+        
+        function processNext() {
+            const now = Date.now();
+            if (now - lastProcessTime < PROCESS_INTERVAL) {
+                setTimeout(processNext, PROCESS_INTERVAL - (now - lastProcessTime));
+                return;
+            }
+            
+            if (logQueue.length === 0) {
+                isProcessing = false;
+                return;
+            }
+            
+            const entry = logQueue.shift();
+            const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const logDiv = document.createElement('div');
+            logDiv.className = `log-line ${entry.type}`;
+            // حذف تگ‌های [INFO] و غیره برای خوانایی بهتر
+            let displayText = entry.text.replace(/\[AyVPN-DNS Client\]\s*\[\w+\]\s*/, '');
+            logDiv.innerHTML = `[${time}] ${displayText}`;
+            logContent.appendChild(logDiv);
+            
+            // محدود کردن تعداد خطوط لاگ به 250 خط (حذف قدیمی‌ها از بالا)
+            while (logContent.children.length > 250) {
+                logContent.removeChild(logContent.firstChild);
+            }
+            
+            lastProcessTime = now;
+            setTimeout(processNext, 20); // فاصله کم بین هر لاگ برای سرعت بالا
+        }
+        
+        processNext();
+    }
+
+    // تولید لاگ‌های مداوم و سریع از فایل واقعی
+    let currentLogIndex = 0;
+    function generatePeriodicLog() {
+        if (isConnected) {
+            // در حالت اتصال، لاگ‌های واقعی را با سرعت بالا نمایش بده
+            addLog(realLogs[currentLogIndex % realLogs.length]);
+            currentLogIndex++;
+        } else {
+            const idleMsgs = [
+                "⚡ Idle: VPN tunnel disconnected. Click globe to connect.",
+                "⏳ Waiting for connection...",
+                "🔌 Proxy server ready but inactive",
+                "📡 No active resolvers - start VPN"
+            ];
+            addLog(idleMsgs[Math.floor(Math.random() * idleMsgs.length)], "warning");
+        }
+    }
+
+    // به روز رسانی تعداد ریزالورها
+    function updateResolverCount() {
+        if (isConnected) {
+            fakeResolverCount = Math.floor(Math.random() * 30) + 4;
+            resolverCountSpan.style.color = "#50fa7b";
+        } else {
+            fakeResolverCount = Math.floor(Math.random() * 4);
+            resolverCountSpan.style.color = "#ffb86c";
+        }
+        resolverCountSpan.innerText = fakeResolverCount;
+    }
+
+    // چرخش وبسایت‌ها
+    function rotateWebsites() {
+        if(isConnected) {
+            for(let i=0; i<websiteDivs.length; i++) {
+                let rand = Math.floor(Math.random() * websitesList.length);
+                websiteDivs[i].innerText = websitesList[rand];
+            }
+        } else {
+            websiteDivs[0].innerText = "offline mode";
+            websiteDivs[1].innerText = "connect VPN";
+            websiteDivs[2].innerText = "---";
+        }
+    }
+
+    // رنگ شمای
+    function updateShammayColor() {
+        const hue = (Date.now() / 45) % 360;
+        const r = Math.floor(128 + 127 * Math.sin(hue * Math.PI / 180));
+        const g = Math.floor(128 + 127 * Math.sin((hue + 120) * Math.PI / 180));
+        const b = Math.floor(128 + 127 * Math.sin((hue + 240) * Math.PI / 180));
+        shammayGlow.style.color = `rgb(${r}, ${g}, ${b})`;
+        shammayGlow.style.textShadow = `0 0 14px rgb(${r}, ${g}, ${b})`;
+        shammayGlow.style.borderColor = `rgb(${r}, ${g}, ${b})`;
+    }
+
+    // تولتیپ وسط کره
+    function showCenterTooltip(text) {
+        if(tooltipElement) tooltipElement.remove();
+        tooltipElement = document.createElement('div');
+        tooltipElement.className = 'globe-tooltip-center';
+        tooltipElement.innerText = text;
+        document.body.appendChild(tooltipElement);
+        const rect = globeContainer.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        tooltipElement.style.left = `${centerX}px`;
+        tooltipElement.style.top = `${centerY}px`;
+    }
+
+    function hideCenterTooltip() {
+        if(tooltipElement) {
+            tooltipElement.remove();
+            tooltipElement = null;
+        }
+    }
+
+    // اتصال/قطع
+    function toggleConnection() {
+        isConnected = !isConnected;
+        if(isConnected) {
+            globeContainer.classList.add('rotating');
+            successCircle.classList.add('active');
+            addLog("✅ VPN Session Active! Tunnel established. Resolvers: 7 active", "success");
+            addLog("SOCKS5 Proxy server listening on 127.0.0.1:18000", "info");
+            addLog("Async Runtime Initialized: 4 RX/TX Workers, 5 Processors", "success");
+        } else {
+            globeContainer.classList.remove('rotating');
+            successCircle.classList.remove('active');
+            addLog("VPN disconnected by user. Session terminated.", "warning");
+            addLog("All resolvers released. Proxy disabled.", "info");
+        }
+        updateResolverCount();
+        rotateWebsites();
+    }
+
+    // پروکسی
+    function toggleProxySimulate() {
+        proxyActive = !proxyActive;
+        if(proxyActive) {
+            proxyToggleBtn.classList.add('active');
+            proxyToggleTextSpan.innerText = currentLanguage === 'en' ? "Proxy ON" : "پروکسی فعال";
+            addLog("System proxy enabled → 127.0.0.1:18000 (SOCKS5)", "success");
+        } else {
+            proxyToggleBtn.classList.remove('active');
+            proxyToggleTextSpan.innerText = currentLanguage === 'en' ? "Proxy OFF" : "پروکسی غیرفعال";
+            addLog("System proxy disabled", "info");
+        }
+    }
+
+    // زبان
+    function toggleLanguage() {
+        currentLanguage = currentLanguage === 'en' ? 'fa' : 'en';
+        const proxyText = document.getElementById('proxyToggleText');
+        const subEl = document.getElementById('subText');
+        const resolverLabelSpan = document.getElementById('resolverLabel');
+        if(currentLanguage === 'fa') {
+            subEl.innerText = "تونل امن DNS";
+            proxyText.innerText = proxyActive ? "پروکسی فعال" : "پروکسی غیرفعال";
+            resolverLabelSpan.innerHTML = "ریزالورها<br>فعال";
+            document.querySelectorAll('.card-header span').forEach(span => {
+                if(span.innerText === "DOMAINS") span.innerText = "آدرس سرور";
+                if(span.innerText === "ENCRYPTION KEY") span.innerText = "کلید رمزنگاری";
+                if(span.innerText === "PROXY SETTINGS") span.innerText = "تنظیمات پروکسی";
+            });
+        } else {
+            subEl.innerText = "Secure DNS Tunnel VPN";
+            proxyText.innerText = proxyActive ? "Proxy ON" : "Proxy OFF";
+            resolverLabelSpan.innerHTML = "Active<br>Resolvers";
+            document.querySelectorAll('.card-header span').forEach(span => {
+                if(span.innerText === "آدرس سرور") span.innerText = "DOMAINS";
+                if(span.innerText === "کلید رمزنگاری") span.innerText = "ENCRYPTION KEY";
+                if(span.innerText === "تنظیمات پروکسی") span.innerText = "PROXY SETTINGS";
+            });
+        }
+    }
+
+    function notify(title, msg) { alert(`${title}\n${msg}`); }
+
+    // رویدادها
+    globeContainer.addEventListener('mouseenter', () => {
+        const tip = isConnected ? (currentLanguage === 'en' ? "Connected" : "متصل است") : (currentLanguage === 'en' ? "Connect" : "اتصال");
+        showCenterTooltip(tip);
+    });
+    globeContainer.addEventListener('mouseleave', hideCenterTooltip);
+    globeContainer.addEventListener('click', toggleConnection);
+    proxyToggleBtn.addEventListener('click', toggleProxySimulate);
+    langBtn.addEventListener('click', toggleLanguage);
+    userInfoBtn.addEventListener('click', () => notify("Subscription Info", "User: shammay | Volume: Unlimited | Active Users: 2"));
+    settingsBtn.addEventListener('click', () => notify("Advanced Settings", "MTU, ARQ, DNS, Compression panels"));
+    resolversBtn.addEventListener('click', () => notify("Edit Resolvers", "8.8.8.8:53\n1.1.1.1:53\n185.208.76.104:53"));
+    updateResolversBtn.addEventListener('click', () => {
+        addLog("Fetching latest resolvers from remote CDN...", "info");
+        setTimeout(() => {
+            addLog("Resolvers list updated: 12 active entries added", "success");
+        }, 1200);
+    });
+    document.getElementById('logoClick')?.addEventListener('click', () => window.open("https://shammay.ir", "_blank"));
+    document.getElementById('titleClick')?.addEventListener('click', () => window.open("https://shammay.ir", "_blank"));
+
+    // تایمرها با فواصل کوتاه‌تر برای سرعت بیشتر
+    setInterval(updateResolverCount, 2000);
+    setInterval(rotateWebsites, 2800);
+    setInterval(() => generatePeriodicLog(), 2200); // سرعت بالای نمایش لاگ‌ها
+    setInterval(updateShammayColor, 130);
+
+    // مقداردهی اولیه
+    (function init() {
+        addLog("AyVPN-DNS Client Started | Build: v2026.05.01-1.0.0", "info");
+        addLog("Loaded Resolvers: 443 endpoints.", "resolver");
+        addLog("MTU Testing parallel=200...", "info");
+        addLog("Global MTU Configuration -> Upload: 49, Download: 562", "info");
+        addLog("AyVPN-DNS Ready — Click Earth to start secure tunnel", "success");
+        updateResolverCount();
+        rotateWebsites();
+        updateShammayColor();
+    })();
+</script>
+</body>
+</html>
